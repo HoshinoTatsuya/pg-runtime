@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Client } from 'pg';
+import { dropDatabase } from './drop-database';
 
 /**
  * Отдельная база набора: создаётся от адреса суперпользователя PG_TEST_URL.
@@ -37,7 +38,7 @@ export const createTestDatabase = async (
       const cleanup = new Client({ connectionString: adminUrl });
       await cleanup.connect();
       try {
-        await cleanup.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
+        await dropDatabase(cleanup, name);
       } finally {
         await cleanup.end();
       }

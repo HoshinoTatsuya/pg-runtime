@@ -13,6 +13,7 @@ import { POSTGRES_LIMIT } from './constants/postgres-limit.constant';
 import { RETRY_REASON } from './constants/retry-reason.constant';
 import { RETRYABLE_SQLSTATE } from './constants/retryable-sqlstate.constant';
 import { ManualTransactionControlError } from './manual-transaction-control.error';
+import { dropDatabase } from './testing/drop-database';
 import { TransactionClientMisuseError } from './transaction-client-misuse.error';
 import { transactionKeepingFailure } from './transaction-keeping-failure';
 import { TransactionRetryAbortedError } from './transaction-retry-aborted.error';
@@ -50,7 +51,7 @@ const createDatabase = async (): Promise<{ url: string; drop(): Promise<void> }>
     drop: async () => {
       const cleanup = new Client({ connectionString: adminUrl });
       await cleanup.connect();
-      await cleanup.query(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
+      await dropDatabase(cleanup, name);
       await cleanup.end();
     },
   };
