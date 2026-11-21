@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm run lint
+      - run: pnpm run build
+
+  test:
+    # scripts/with-pgbouncer.sh (inside `pnpm test`) starts Postgres and PgBouncer 1.26.1 in transaction mode
+    # in docker, exactly as on a developer machine: one server connection per database, so pooler clients
+    # share it, which is what transactionPooler guards against.
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ['15', '16', '17', '18']
+    env:
+      PG_TEST_IMAGE: postgres:${{ matrix.postgres }}-alpine
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jest-report-pg${{ matrix.postgres }}
+          path: .jest-report.json
+          if-no-files-found: ignore
+
+  consumers:
+    # The packed package in throwaway consumer projects (commonjs, node16, nodenext, bundler+ESM,
+    # nodenext+ESM, latest drizzle-orm/pg, TypeScript 7): tsc, ts-jest and loading the entry point.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:consumers

@@ -1,0 +1,16 @@
+# Библиотека — самостоятельный пакет (свой репозиторий). pnpm 11+ не запускает
+# install-скрипты зависимостей без явного решения. Инструменты разработки из того
+# же семейства пакетов (ниже) ставятся сразу после их публикации — без выдержки
+# minimumReleaseAge.
+packages:
+  - '.'
+allowBuilds:
+  # Нативный наблюдатель файлов jest-haste-map (jest 30.5+, режим --watch). Готовые бинарники — в
+  # необязательных пакетах @parcel/watcher-<платформа>; install-скрипт собирает из исходников только
+  # при npm_config_build_from_source=true, то есть без него ничего не теряется.
+  '@parcel/watcher': false
+engineStrict: true
+minimumReleaseAgeExclude:
+  - '@hoshinotatsuya/arch-gates'
+  - '@hoshinotatsuya/jest-groups'
+  - '@hoshinotatsuya/node-guard'

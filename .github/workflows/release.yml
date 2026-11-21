@@ -1,0 +1,41 @@
+name: release
+
+# Publishes to npmjs.com on a version tag (vX.Y.Z) via npm trusted publishing
+# (OIDC, no token). The tag must match package.json; an already published
+# version is skipped, so re-running the workflow is safe.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Tag matches package.json
+        run: |
+          VERSION="$(node -p 'require("./package.json").version')"
+          [ "${GITHUB_REF_NAME}" = "v${VERSION}" ] || { echo "tag ${GITHUB_REF_NAME} != v${VERSION}"; exit 1; }
+      - name: Skip if already published
+        id: published
+        run: |
+          NAME="$(node -p 'require("./package.json").name')"
+          VERSION="$(node -p 'require("./package.json").version')"
+          if [ "$(npm view "${NAME}@${VERSION}" version 2>/dev/null)" = "${VERSION}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "${NAME}@${VERSION} is already on npm"
+          fi
+      # prepublishOnly runs typecheck, the full test suite and the build.
+      - if: steps.published.outputs.skip != 'true'
+        run: npm publish --provenance --access public

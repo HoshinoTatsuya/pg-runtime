@@ -1,0 +1,6 @@
+{
+  "src/transaction-client-misuse.error.ts": {
+    "count": 2,
+    "reason": "MESSAGE — текст ошибки для каждого вида неверного обращения с соединением; таблица сообщений TransactionClientMisuseError, вне класса не читается"
+  }
+}
